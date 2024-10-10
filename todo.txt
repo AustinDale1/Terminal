@@ -1,0 +1,17 @@
+building positioning [X]
+
+put people on buildings []
+bullet movement [X]
+aiming system []
+bullet actual physics[]
+Once egos in check, use better (claude) logic for aimline []
+bullet counter []
+multiple levels []
+figure out memory leaks in C++[]
+
+
+
+do bullet collision, then do the aim and fire
+
+
+image to pixel art converter

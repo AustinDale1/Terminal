@@ -15,11 +15,7 @@
 
 
 
-// Set up random locations for the dumb buildings
 
-//------------------------------------------------------------------------------------
-// Global Variables Declaration
-//------------------------------------------------------------------------------------
 constexpr int SCREEN_WIDTH = 2400;
 constexpr int SCREEN_HEIGHT = 1350;
 constexpr float GRAVITY = 9.81f;
@@ -69,7 +65,7 @@ static double GetChangeOfX(double origin, double radius, double change);
 static double GetChangeOfY(double origin, double radius, double change);
 Bullet CreateBullet(Vector2 startPos, float angleInDegrees);
 
-Bullet bullet = CreateBullet({300, 300}, 30);
+// Bullet bullet = CreateBullet({300, 300}, 30);
 //------------------------------------------------------------------------------------
 // Program main entry point
 //------------------------------------------------------------------------------------
@@ -143,7 +139,7 @@ void UpdateGame(void)
         {
             if(isFired)
             {
-                bullet = CreateBullet({100, 300}, 45.0f);
+                //bullet = CreateBullet({100, 300}, 45.0f);
 
             } else
             {
@@ -252,8 +248,8 @@ void DrawGame()
         DrawText(text.c_str(), 1620, 614, 30, BLACK);    
         //DrawLine(bullet.endOfTrail.x, bullet.endOfTrail.y, bullet.position.x, bullet.position.y, BLACK);
         DrawLine(aimLine.origin.x, aimLine.origin.y, aimLine.notTheOrigin.x, aimLine.notTheOrigin.y, BLACK);
-        if(isFired)
-            DrawCircleV(bullet.position, 2.0f, RED);
+        // if(isFired)
+        //     DrawCircleV(bullet.position, 2.0f, RED);
 
         DrawRectangleRec(targetPos, PURPLE);
 

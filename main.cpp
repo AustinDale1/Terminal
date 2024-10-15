@@ -20,19 +20,29 @@ constexpr int SCREEN_WIDTH = 2400;
 constexpr int SCREEN_HEIGHT = 1350;
 constexpr float GRAVITY = 9.81f;
 constexpr int BULLET_INITIAL_SPEED = 823;
-constexpr float SCALE_FACTOR = 10.0;
+constexpr float SCALE_FACTOR = 100.0;
+constexpr float TIME_STEP = 1.0f / 60.0f;
 
 
 static bool gameOver = false;
 static bool pause = false;
 
-typedef struct {
-    Vector2 position;
-    Vector2 velocity;
-    float time;
-} Bullet;
-
-
+class Bullet {
+    public:          
+        Vector2 position;
+        Vector2 velocity;
+        float time;   
+        void FireBullet(Vector2 startPos, float angleRad)
+        {
+            position = startPos;
+            this->time = 0.0f;
+            
+            this->velocity.x = (BULLET_INITIAL_SPEED * cosf(angleRad)) / SCALE_FACTOR;
+            this->velocity.y = -(BULLET_INITIAL_SPEED * sinf(angleRad)) / SCALE_FACTOR;    
+        }
+    Bullet() { 
+    }
+};
 
 typedef struct AimLine {
     Vector2 origin;
@@ -49,26 +59,14 @@ bool isFired = false;
 bool hitXTheXTarget = false;
 static double gunAngle = {};
 
-//------------------------------------------------------------------------------------
-// Module Functions Declaration (local)
-//------------------------------------------------------------------------------------
-static void InitGame(void);         // Initialize game
-static void UpdateGame(void);       // Update game (one frame)
-static void UpdateBullet(void);
-static void DrawAimLine(void);
-static void DrawGame(void);  
-static void DrawBullet(Bullet* bullet);    // Draw game (one frame)
-static void UpdateDrawFrame(void);  // Update and Draw (one frame)
+static void InitGame(void);   
+static void UpdateGame(Bullet& bullet);   
+static void UpdateBullet(Bullet& bullet, float deltaTime);
+static void DrawAimLine(Bullet& bullet);
+static void DrawGame(Bullet& bullet);  
+static void UpdateDrawFrame(Bullet& bullet); 
 static double DegToRad(double x);
-static void BulletMovement(void);
-static double GetChangeOfX(double origin, double radius, double change);
-static double GetChangeOfY(double origin, double radius, double change);
-Bullet CreateBullet(Vector2 startPos, float angleInDegrees);
 
-// Bullet bullet = CreateBullet({300, 300}, 30);
-//------------------------------------------------------------------------------------
-// Program main entry point
-//------------------------------------------------------------------------------------
 int main(void)
 {
 
@@ -78,15 +76,41 @@ int main(void)
 
     SetTargetFPS(60);
 
+    Bullet bullet;
+
     while (!WindowShouldClose())
     {
-
-        UpdateDrawFrame();
+        UpdateDrawFrame(bullet);
     }
 
     CloseWindow();
 
     return 0;
+}
+
+void UpdateBullet(Bullet& bullet, float deltaTime) {
+    if(hitXTheXTarget)
+    {
+        if(!gameOver)
+        std::cout << "in first if kill" << '\n';
+        isFired = false;
+        gameOver = true;
+        return;
+    } else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
+    {
+        if(!gameOver)
+        std::cout << "bullet left screen" << '\n';
+        isFired = false;
+        gameOver = true;
+        return;
+    }
+    
+    bullet.time += deltaTime;
+    bullet.position.x += bullet.velocity.x * deltaTime * SCALE_FACTOR;
+    float gravity_term = 0.5f * (GRAVITY / (SCALE_FACTOR * SCALE_FACTOR)) * (bullet.time * bullet.time);
+    bullet.position.y += (bullet.velocity.y * deltaTime + gravity_term) * SCALE_FACTOR;
+    bullet.velocity.y += (GRAVITY / SCALE_FACTOR) * deltaTime;
+    
 }
 
 void InitGame(void)
@@ -95,7 +119,6 @@ void InitGame(void)
     int lbx = 1300, ubx = 1900, lby = -100, uby = 100; 
     buildingTwoPos.x = (rand() % (ubx - lbx + 1)) + lbx;
     buildingTwoPos.y = (rand() % (uby - lby + 1)) + lby;
-    std::cout << buildingTwoPos.x << '\n';
     targetPos.x = buildingTwoPos.x + 90;
     targetPos.y = 574 + buildingTwoPos.y;
     targetPos.height = 20;
@@ -104,32 +127,13 @@ void InitGame(void)
     aimLine.notTheOrigin = { buildingOnePos.x + 400, buildingOnePos.y };
 }
 
-// Update and Draw (one frame)
-void UpdateDrawFrame(void)
+void UpdateDrawFrame(Bullet& bullet)
 {
-    UpdateGame();
-    DrawGame();
+    UpdateGame(bullet);
+    DrawGame(bullet);
 }
 
-
-
-Bullet CreateBullet(Vector2 startPos, float angleInDegrees) {
-    Bullet* bullet = { 0 };
-    bullet->position = startPos;
-    bullet->time = 0.0f;
-    
-    // Convert angle to radians
-    float angleRad = angleInDegrees * DEG2RAD;
-    
-    // Initialize velocity components (scaled down for screen coordinates)
-    bullet->velocity.x = (BULLET_INITIAL_SPEED * cosf(angleRad)) / SCALE_FACTOR;
-    bullet->velocity.y = -(BULLET_INITIAL_SPEED * sinf(angleRad)) / SCALE_FACTOR; // Negative because y-axis is inverted
-    
-    return *bullet;
-}
-
-// Update game (one frame)
-void UpdateGame(void)
+void UpdateGame(Bullet& bullet)
 {
     if (!gameOver)
     {
@@ -139,13 +143,11 @@ void UpdateGame(void)
         {
             if(isFired)
             {
-                //bullet = CreateBullet({100, 300}, 45.0f);
-
+                UpdateBullet(bullet, GetFrameTime());
             } else
             {
-                DrawAimLine();
+                DrawAimLine(bullet);
             }
-
         }
     }
     else
@@ -163,103 +165,59 @@ double DegToRad(double x)
     return ((x * 3.14)/180);
 }
 
-double GetChangeOfX(double origin, double radius, double change)
-{
-    return origin + (radius * cos(DegToRad(change)));
-}
 
-double GetChangeOfY(double origin, double radius, double change)
-{
-    return origin + (radius * sin(DegToRad(change)));
-}
-
-void DrawAimLine(void)
+void DrawAimLine(Bullet& bullet)
 {
 
     double radius = 300;
     if (IsKeyDown(KEY_UP)) 
     {
-        aimLine.notTheOrigin.y = GetChangeOfY(aimLine.origin.y, radius, -.5+magic);
-        if(aimLine.notTheOrigin.y - aimLine.origin.y > 0)
-        {
-            aimLine.notTheOrigin.x = GetChangeOfX(aimLine.origin.x, radius, -.5+magic);
-            //std::cout <<  GetChangeOfX(aimLine.origin.x, radius, -2) << '\n';
-        } else if(aimLine.notTheOrigin.y - aimLine.origin.y < 0)
-        {
-            aimLine.notTheOrigin.x = GetChangeOfX(aimLine.origin.x, radius, -.5+magic);
-            //std::cout <<  GetChangeOfX(aimLine.origin.x, radius, -2) << '\n';
-        }
-        magic = magic - .5;
+        magic = magic + .5;
     }
     if (IsKeyDown(KEY_DOWN)) 
     {
-        aimLine.notTheOrigin.y = GetChangeOfY(aimLine.origin.y, radius, .5+magic);
-        if(aimLine.notTheOrigin.y - aimLine.origin.y > 0)
-        {
-            aimLine.notTheOrigin.x = GetChangeOfX(aimLine.origin.x, radius, .5+magic);
-        } else if(aimLine.notTheOrigin.y - aimLine.origin.y < 0)
-        {
-            aimLine.notTheOrigin.x = GetChangeOfX(aimLine.origin.x, radius, .5+magic);
-        }
-        magic = magic + .5;
+        magic = magic - .5;
     }
+    aimLine.notTheOrigin.x = aimLine.origin.x + radius * cos(DegToRad(magic));
+    aimLine.notTheOrigin.y = aimLine.origin.y - radius * sin(DegToRad(magic));
+
     if(IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
     {
-        gunAngle = atan(((aimLine.origin.y - aimLine.notTheOrigin.y)/(aimLine.notTheOrigin.x - aimLine.origin.x)));
-        gunAngle = 3.14 - gunAngle;
-        std::cout << aimLine.origin.y << '\n';
-        std::cout << aimLine.notTheOrigin.y << '\n';
-        std::cout << aimLine.notTheOrigin.x << '\n';
-        std::cout << aimLine.origin.x << '\n';
-        std::cout << "gun angle is " << gunAngle << '\n';
+        gunAngle = DegToRad(magic);        
+        bullet.FireBullet({buildingOnePos.x + 100, buildingOnePos.y - 50}, gunAngle);
         isFired = true;
-        std::cout << "PLEAE";
     }
 }
 
-void DrawBullet(Bullet* bullet) {
-    DrawCircleV(bullet->position, 2.0f, RED);
-}
-
-// Draw game (one frame)
-void DrawGame()
+void DrawGame(Bullet& bullet)
 {
     BeginDrawing();
 
         ClearBackground(RAYWHITE);
 
-        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLUE);
-        DrawRectangle(0, SCREEN_HEIGHT - 256, SCREEN_WIDTH, 256, GREEN);
-
-
-        // static const int screenWidth = 2400;
-        // static const int screenHeight = 1350;
-        std::string text = std::to_string(aimLine.notTheOrigin.y);
-        
-        // Convert the std::string to a const char* for DrawText
-        // DrawText(text.c_str(), 200, 200, 20, BLACK);
-        DrawRectangle(buildingOnePos.x, buildingOnePos.y, 200, 700, GRAY);
-        DrawText(text.c_str(), 70, 414, 20, BLACK); 
-
-        text = std::to_string(buildingTwoPos.x) + " " + std::to_string(buildingTwoPos.y);
-        //so the y is the top of the building so when we do our random number and add or subtract,
-        //we'll have to do the same thing to the building size
-        DrawRectangle(buildingTwoPos.x, 594 + buildingTwoPos.y, 200, 500 - buildingTwoPos.y, YELLOW);
-        DrawText(text.c_str(), 1620, 614, 30, BLACK);    
-        //DrawLine(bullet.endOfTrail.x, bullet.endOfTrail.y, bullet.position.x, bullet.position.y, BLACK);
-        DrawLine(aimLine.origin.x, aimLine.origin.y, aimLine.notTheOrigin.x, aimLine.notTheOrigin.y, BLACK);
-        // if(isFired)
-        //     DrawCircleV(bullet.position, 2.0f, RED);
-
-        DrawRectangleRec(targetPos, PURPLE);
-
         if (!gameOver)
         {
+            if(CheckCollisionCircleRec(bullet.position, 5.0, targetPos))
+            {
+                gameOver = true;
+            }
+            DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLUE);
+            DrawRectangle(0, SCREEN_HEIGHT - 256, SCREEN_WIDTH, 256, GREEN);
+            DrawRectangle(buildingOnePos.x, buildingOnePos.y, 200, 700, GRAY);
+            DrawRectangle(buildingTwoPos.x, 594 + buildingTwoPos.y, 200, 500 - buildingTwoPos.y, YELLOW);
+            DrawLine(aimLine.origin.x, aimLine.origin.y, aimLine.notTheOrigin.x, aimLine.notTheOrigin.y, BLACK);
+            if(isFired && !gameOver)
+            {
+                DrawCircleV(bullet.position, 5.0f, RED);
+            }
+            DrawRectangleRec(targetPos, PURPLE);
             
             if (pause) DrawText("GAME PAUSED", SCREEN_WIDTH/2 - MeasureText("GAME PAUSED", 40)/2, SCREEN_HEIGHT/2 - 40, 40, GRAY);
         }
-        else DrawText("PRESS [ENTER] TO PLAY AGAIN", GetScreenWidth()/2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20)/2, GetScreenHeight()/2 - 50, 20, GRAY);
-
+        else 
+        {
+            DrawText("PRESS [ENTER] TO PLAY AGAIN", GetScreenWidth()/2 - MeasureText("PRESS [ENTER] TO PLAY AGAIN", 20)/2, GetScreenHeight()/2 - 50, 20, GRAY);
+        }
     EndDrawing();
 }
 

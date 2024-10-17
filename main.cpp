@@ -58,6 +58,7 @@ double magic = 0;
 bool isFired = false;
 bool hitXTheXTarget = false;
 static double gunAngle = {};
+int bullets = 3;
 
 static void InitGame(void);   
 static void UpdateGame(Bullet& bullet);   
@@ -98,8 +99,12 @@ void UpdateBullet(Bullet& bullet, float deltaTime) {
         return;
     } else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
     {
-        if(!gameOver)
-        std::cout << "bullet left screen" << '\n';
+        isFired = false;
+        bullets = bullets - 1;
+        bullet.FireBullet({buildingOnePos.x + 100, buildingOnePos.y - 50}, gunAngle);
+        return;
+    } else if(bullets <= 0)
+    {
         isFired = false;
         gameOver = true;
         return;

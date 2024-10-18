@@ -59,6 +59,7 @@ bool isFired = false;
 bool hitXTheXTarget = false;
 static double gunAngle = {};
 int bullets = 3;
+int score = 0;
 
 static void InitGame(void);   
 static void UpdateGame(Bullet& bullet);   
@@ -67,6 +68,7 @@ static void DrawAimLine(Bullet& bullet);
 static void DrawGame(Bullet& bullet);  
 static void UpdateDrawFrame(Bullet& bullet); 
 static double DegToRad(double x);
+static void NextLevel();
 
 int main(void)
 {
@@ -82,11 +84,21 @@ int main(void)
     while (!WindowShouldClose())
     {
         UpdateDrawFrame(bullet);
+        if(!gameOver && hitXTheXTarget)
+        {
+            NextLevel();
+        }
     }
 
     CloseWindow();
 
     return 0;
+}
+
+void NextLevel()
+{
+    hitXTheXTarget = false;
+    InitGame();
 }
 
 void UpdateBullet(Bullet& bullet, float deltaTime) {
@@ -95,7 +107,8 @@ void UpdateBullet(Bullet& bullet, float deltaTime) {
         if(!gameOver)
         std::cout << "in first if kill" << '\n';
         isFired = false;
-        gameOver = true;
+        score = score + 1 + bullets;
+        std::cout << "Score is " << score << "   + " << bullets << '\n';
         return;
     } else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
     {
@@ -130,6 +143,7 @@ void InitGame(void)
     targetPos.width = 5;
     aimLine.origin = { buildingOnePos.x + 100, buildingOnePos.y - 50 };
     aimLine.notTheOrigin = { buildingOnePos.x + 400, buildingOnePos.y };
+    bullets = 3;
 }
 
 void UpdateDrawFrame(Bullet& bullet)
@@ -204,7 +218,7 @@ void DrawGame(Bullet& bullet)
         {
             if(CheckCollisionCircleRec(bullet.position, 5.0, targetPos))
             {
-                gameOver = true;
+                hitXTheXTarget = true;
             }
             DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLUE);
             DrawRectangle(0, SCREEN_HEIGHT - 256, SCREEN_WIDTH, 256, GREEN);
@@ -216,6 +230,14 @@ void DrawGame(Bullet& bullet)
                 DrawCircleV(bullet.position, 5.0f, RED);
             }
             DrawRectangleRec(targetPos, PURPLE);
+            
+            std::string text = "Score: " + std::to_string(score);
+            DrawText(text.c_str(), 20, 20, 20, BLACK); 
+
+            text = "Bullets: " + std::to_string(bullets);
+            DrawText(text.c_str(), 120, 20, 20, BLACK); 
+
+
             
             if (pause) DrawText("GAME PAUSED", SCREEN_WIDTH/2 - MeasureText("GAME PAUSED", 40)/2, SCREEN_HEIGHT/2 - 40, 40, GRAY);
         }

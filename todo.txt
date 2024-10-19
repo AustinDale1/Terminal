@@ -6,3 +6,7 @@ do bullet collision, then do the aim and fire
 
 
 image to pixel art converter
+
+
+
+is fired i basically interefering with update bullet's scoring sytem, but bullet count sees fine?

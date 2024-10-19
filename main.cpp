@@ -98,7 +98,17 @@ int main(void)
 void NextLevel()
 {
     hitXTheXTarget = false;
-    InitGame();
+    score = score + bullets;
+    int lbx = 1300, ubx = 1900, lby = -100, uby = 100; 
+    buildingTwoPos.x = (rand() % (ubx - lbx + 1)) + lbx;
+    buildingTwoPos.y = (rand() % (uby - lby + 1)) + lby;
+    targetPos.x = buildingTwoPos.x + 90;
+    targetPos.y = 574 + buildingTwoPos.y;
+    targetPos.height = 20;
+    targetPos.width = 5;
+    aimLine.origin = { buildingOnePos.x + 100, buildingOnePos.y - 50 };
+    aimLine.notTheOrigin = { buildingOnePos.x + 400, buildingOnePos.y };
+    bullets = 3;
 }
 
 void UpdateBullet(Bullet& bullet, float deltaTime) {
@@ -107,21 +117,25 @@ void UpdateBullet(Bullet& bullet, float deltaTime) {
         if(!gameOver)
         std::cout << "in first if kill" << '\n';
         isFired = false;
-        score = score + 1 + bullets;
+        //score = score + 1 + bullets;
         std::cout << "Score is " << score << "   + " << bullets << '\n';
-        return;
-    } else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
-    {
-        isFired = false;
-        bullets = bullets - 1;
-        bullet.FireBullet({buildingOnePos.x + 100, buildingOnePos.y - 50}, gunAngle);
         return;
     } else if(bullets <= 0)
     {
         isFired = false;
         gameOver = true;
         return;
-    }
+    }else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
+    {
+        isFired = false;
+        bullets = bullets - 1;
+        if(bullets <= 0)
+        {
+            gameOver = true;
+        }
+        bullet.FireBullet({buildingOnePos.x + 100, buildingOnePos.y - 50}, gunAngle);
+        return;
+    } 
     
     bullet.time += deltaTime;
     bullet.position.x += bullet.velocity.x * deltaTime * SCALE_FACTOR;
@@ -144,6 +158,7 @@ void InitGame(void)
     aimLine.origin = { buildingOnePos.x + 100, buildingOnePos.y - 50 };
     aimLine.notTheOrigin = { buildingOnePos.x + 400, buildingOnePos.y };
     bullets = 3;
+    score = 0;
 }
 
 void UpdateDrawFrame(Bullet& bullet)
@@ -160,10 +175,10 @@ void UpdateGame(Bullet& bullet)
 
         if (!pause)
         {
-            if(isFired)
-            {
-                UpdateBullet(bullet, GetFrameTime());
-            } else
+            // if(isFired)
+            // {
+            UpdateBullet(bullet, GetFrameTime());
+            if(!isFired)
             {
                 DrawAimLine(bullet);
             }
@@ -219,6 +234,9 @@ void DrawGame(Bullet& bullet)
             if(CheckCollisionCircleRec(bullet.position, 5.0, targetPos))
             {
                 hitXTheXTarget = true;
+                bullet.position = {buildingOnePos.x + 100, buildingOnePos.y - 50};
+                bullet.velocity = {0, 0};
+                isFired = false;
             }
             DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, BLUE);
             DrawRectangle(0, SCREEN_HEIGHT - 256, SCREEN_WIDTH, 256, GREEN);

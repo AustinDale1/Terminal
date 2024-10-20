@@ -125,10 +125,11 @@ void UpdateBullet(Bullet& bullet, float deltaTime) {
         isFired = false;
         gameOver = true;
         return;
-    }else if(bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT)
+    }else if((bullet.position.x > SCREEN_WIDTH || bullet.position.y > SCREEN_HEIGHT) && isFired)
     {
         isFired = false;
         bullets = bullets - 1;
+        std::cout << "right here, bullet being decremented" << '\n';
         if(bullets <= 0)
         {
             gameOver = true;
@@ -189,6 +190,7 @@ void UpdateGame(Bullet& bullet)
         if (IsKeyPressed(KEY_ENTER))
         {
             InitGame();
+            std::cout << "restarting game" << '\n';
             gameOver = false;
         }
     }
